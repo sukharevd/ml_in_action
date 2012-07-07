@@ -1,1 +1,8 @@
+# Python byte code
+*.pyc
+
+# VIM swap file
+*.swp
+
+# PyCharm files
 .idea/
