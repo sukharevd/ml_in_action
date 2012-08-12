@@ -1,6 +1,9 @@
+#!/usr/bin/python
+
 from math import log
 from numpy import *
 from operator import *
+
 # p(a|b) = \frac{p(a and b)}{p(b)}
 # p(a|b) = \frac{p(b|a)p(a)}{p(b)}
 # p(c_i|w) = \frac{p(w_1|c_i)p(w_2|c_i)...p(w_n|c_i)p(c_i)}{p(w)}
@@ -23,11 +26,9 @@ def createVocabularyList(dataSet):
 
 def wordsSetToVector(words, vocabularyList):
     vector = [0] * len(vocabularyList)
-#    print 'Words: %s' % words
-#    print 'Vocab: %s' % vocabularyList
     for word in words:
         if (word in vocabularyList):
-            vector[vocabularyList.index(word)] = 1
+            vector[vocabularyList.index(word)] += 1
         else:
             print('Word %s is not in vocabulary list' % word)
     return vector
@@ -50,7 +51,6 @@ def trainNaiveBayesClassifier(dataSet, categories):
     return p0Vector, p1Vector, pAbusive
     
 def classifyNaiveBayes(inVector, p0Vector, p1Vector, pAbusive):
-#    p0Vector, p1Vector, pAbusive = trainNaiveBayesClassifier(dataSet, categories)
     p1 = sum(p1Vector * inVector) + log(1 - pAbusive)
     p0 = sum(p0Vector * inVector) + log(pAbusive)
     if p1 > p0:
@@ -61,13 +61,9 @@ def classifyNaiveBayes(inVector, p0Vector, p1Vector, pAbusive):
 def testingNaiveBayes():
     postsList, classesList = loadDataSet()
     myVocabList = createVocabularyList(postsList)
-#    print 'Vocabulary list:\n %s' % myVocabList
     trainDataSet = []
     for document in postsList:
         trainDataSet.append(wordsSetToVector(document, myVocabList))
-#    print trainDataSet
-#    print matrix(trainDataSet)
-#    print array(classesList)
     p0V, p1V, pA = trainNaiveBayesClassifier(trainDataSet,array(classesList))
     testEntry = ['love', 'my', 'dalmation']
     thisDoc = array(wordsSetToVector(testEntry, myVocabList))
@@ -76,7 +72,42 @@ def testingNaiveBayes():
     thisDoc = array(wordsSetToVector(testEntry, myVocabList))
     print(testEntry, ' classified as: ',classifyNaiveBayes(thisDoc, p0V, p1V, pA))
 
+def parseText(text):
+    import re
+    tokens = re.split(r'\W*', text)
+    return [token.lower() for token in tokens if len(token) > 2]
+
+def spamTest():
+    documents = []; classes = []; fullText = []
+    for i in range(1, 26):
+        words = parseText(open('email/spam/%d.txt' % i).read())
+        documents.append(words)
+        fullText.extend(words)
+        classes.append(1)
+        words = parseText(open('email/ham/%d.txt' % i).read())
+        documents.append(words)
+        fullText.extend(words)
+        classes.append(0)
+    vocabulary = createVocabularyList(documents)
+    trainingSet = range(50)
+    testSet = []
+    for i in range(10):
+        randIdx = int(random.uniform(0, len(trainingSet)))
+        testSet.append(trainingSet[randIdx])
+        del(trainingSet[randIdx])
+    trainingMatrix = []; trainingClasses = []
+    for docIdx in trainingSet:
+        trainingMatrix.append(wordsSetToVector(documents[docIdx], vocabulary))
+        trainingClasses.append(classes[docIdx])
+    p0V, p1V, pSpam = trainNaiveBayesClassifier(array(trainingMatrix), array(trainingClasses))
+    errorCount = 0
+    for docIdx in testSet:
+        wordVector = wordsSetToVector(documents[docIdx], vocabulary)
+        if classifyNaiveBayes(array(wordVector), p0V, p1V, pSpam) != classes[docIdx]:
+            errorCount += 1
+    print 'The error rate is: %s' % (float(errorCount) / len(testSet))
+    
     
 trainNaiveBayesClassifier([[1]], [1])
-print 'TESTING'
 testingNaiveBayes()
+spamTest()
