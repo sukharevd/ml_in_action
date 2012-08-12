@@ -29,8 +29,8 @@ def wordsSetToVector(words, vocabularyList):
     for word in words:
         if (word in vocabularyList):
             vector[vocabularyList.index(word)] += 1
-        else:
-            print('Word %s is not in vocabulary list' % word)
+#        else:
+#            print('Word %s is not in vocabulary list' % word)
     return vector
 
 def trainNaiveBayesClassifier(dataSet, categories):
@@ -72,6 +72,7 @@ def testingNaiveBayes():
     thisDoc = array(wordsSetToVector(testEntry, myVocabList))
     print(testEntry, ' classified as: ',classifyNaiveBayes(thisDoc, p0V, p1V, pA))
 
+# SPAM FILTERING
 def parseText(text):
     import re
     tokens = re.split(r'\W*', text)
@@ -106,8 +107,79 @@ def spamTest():
         if classifyNaiveBayes(array(wordVector), p0V, p1V, pSpam) != classes[docIdx]:
             errorCount += 1
     print 'Spam classification. The error rate is: %s' % (float(errorCount) / len(testSet))
-    
-    
+
+
+# PERSONAL ADS (RSS FEEDS)
+def calculateTheMostFrequent(vocabulary, fullText):
+    import operator
+    frequencyDict = {}
+    for token in vocabulary:
+        frequencyDict[token] = fullText.count(token)
+    sortedFrequencies = sorted(frequencyDict.iteritems(), key=operator.itemgetter(1), reverse=True)
+    return sortedFrequencies[:30]
+
+def localWords(feed1, feed0):
+    import feedparser
+    documents = []; classes = []; fullText = []
+    minLength = min(len(feed1['entries']), len(feed0['entries']))
+    for i in range(minLength):
+        words = parseText(feed1['entries'][i]['summary'])
+        documents.append(words)
+        fullText.extend(words)
+        classes.append(1)
+        words = parseText(feed0['entries'][i]['summary'])
+        documents.append(words)
+        fullText.extend(words)
+        classes.append(0)
+    vocabulary = createVocabularyList(documents)
+    top30Words = calculateTheMostFrequent(vocabulary, fullText)
+    print 'Top words are:\n%s' % [entry[0] for entry in top30Words]
+    for pairW in top30Words:
+        if pairW[0] in vocabulary: vocabulary.remove(pairW[0])
+    trainingSet = range(2*minLength); testSet = []
+    for i in range(20):
+        randIdx = int(random.uniform(0,len(trainingSet)))
+        testSet.append(trainingSet[randIdx])
+        del(trainingSet[randIdx])
+    trainingMatrix = []; trainingClasses = []
+    for docIdx in trainingSet:
+        trainingMatrix.append(wordsSetToVector(documents[docIdx], vocabulary))
+        trainingClasses.append(classes[docIdx])
+    p0V, p1V, pFirstCity = trainNaiveBayesClassifier(array(trainingMatrix), array(trainingClasses))
+    errorCount = 0
+    for docIdx in testSet:
+        words = wordsSetToVector(documents[docIdx], vocabulary)
+        if classifyNaiveBayes(array(words), p0V, p1V, pFirstCity) != classes[docIdx]:
+            errorCount += 1
+    print 'Personal ads. Error rate is: %s' % (float(errorCount) / len(testSet))
+    return vocabulary, p0V, p1V
+
+def getTopWords(ny, sf):
+    import operator
+    vocabulary, p0V, p1V = localWords(ny, sf)
+    print 'p0: %s' % p0V
+    print 'p1: %s' % p1V
+    topNY, topSF = [], []
+    for i in range(len(p0V)):
+        if p0V[i] > -6.0 : topSF.append((vocabulary[i], p0V[i]))
+        if p1V[i] > -6.0 : topNY.append((vocabulary[i], p1V[i]))
+    sortedSF = sorted(topSF, key = lambda pair: pair[1], reverse=True)
+    print '===========  SF  ============'
+    for item in sortedSF:
+        print item[0]
+    sortedNY = sorted(topNY, key = lambda pair: pair[1], reverse=True)
+    print '===========  NY  ============'
+    for item in sortedNY:
+        print item[0]
+     
+
 trainNaiveBayesClassifier([[1]], [1])
 testingNaiveBayes()
 spamTest()
+
+import feedparser
+ny=feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
+sf=feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
+localWords(ny, sf)
+localWords(ny, sf)
+getTopWords(ny, sf)
