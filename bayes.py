@@ -23,6 +23,8 @@ def createVocabularyList(dataSet):
 
 def wordsSetToVector(words, vocabularyList):
     vector = [0] * len(vocabularyList)
+#    print 'Words: %s' % words
+#    print 'Vocab: %s' % vocabularyList
     for word in words:
         if (word in vocabularyList):
             vector[vocabularyList.index(word)] = 1
@@ -59,20 +61,22 @@ def classifyNaiveBayes(inVector, p0Vector, p1Vector, pAbusive):
 def testingNaiveBayes():
     postsList, classesList = loadDataSet()
     myVocabList = createVocabularyList(postsList)
+#    print 'Vocabulary list:\n %s' % myVocabList
     trainDataSet = []
     for document in postsList:
-        trainDataSet.append(wordsSetToVector(myVocabList, document))
-    print trainDataSet
+        trainDataSet.append(wordsSetToVector(document, myVocabList))
+#    print trainDataSet
 #    print matrix(trainDataSet)
-    print array(classesList)
+#    print array(classesList)
     p0V, p1V, pA = trainNaiveBayesClassifier(trainDataSet,array(classesList))
     testEntry = ['love', 'my', 'dalmation']
-    thisDoc = array(wordsSetToVector(myVocabList, testEntry))
+    thisDoc = array(wordsSetToVector(testEntry, myVocabList))
     print(testEntry, ' classified as: ',classifyNaiveBayes(thisDoc, p0V, p1V, pA))
     testEntry = ['stupid', 'garbage']
-    thisDoc = array(wordsSetToVector(myVocabList, testEntry))
+    thisDoc = array(wordsSetToVector(testEntry, myVocabList))
     print(testEntry, ' classified as: ',classifyNaiveBayes(thisDoc, p0V, p1V, pA))
 
     
 trainNaiveBayesClassifier([[1]], [1])
+print 'TESTING'
 testingNaiveBayes()
