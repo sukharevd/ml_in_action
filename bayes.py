@@ -105,7 +105,7 @@ def spamTest():
         wordVector = wordsSetToVector(documents[docIdx], vocabulary)
         if classifyNaiveBayes(array(wordVector), p0V, p1V, pSpam) != classes[docIdx]:
             errorCount += 1
-    print 'The error rate is: %s' % (float(errorCount) / len(testSet))
+    print 'Spam classification. The error rate is: %s' % (float(errorCount) / len(testSet))
     
     
 trainNaiveBayesClassifier([[1]], [1])
