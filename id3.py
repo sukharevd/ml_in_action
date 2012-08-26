@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from numpy import *
 from math import log
 import operator
